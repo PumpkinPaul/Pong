@@ -10,4 +10,5 @@ public static class Resources
 
     public static SpriteFont DefaultSpriteFont;
     public static SpriteFont GameFont;
+    public static SpriteFont SmallFont;
 }

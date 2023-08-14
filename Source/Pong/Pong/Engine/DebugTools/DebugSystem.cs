@@ -26,7 +26,7 @@ public static class DebugSystem
 
     public static bool ResourcesChanged { get; set; }
 
-    private static BaseGame _game;
+    private static PongGame _game;
     public static DebugSettings Settings { get; private set; }
     private static int _updateInactiveGameTicks;
 
@@ -36,7 +36,7 @@ public static class DebugSystem
 
     public static readonly List<Action> _actions = new List<Action>();
 
-    public static void Initialize(BaseGame game, string debugFont)
+    public static void Initialize(PongGame game, string debugFont)
     {
         FrameId = 0;
         _game = game;

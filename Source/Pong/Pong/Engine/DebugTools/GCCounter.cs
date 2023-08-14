@@ -164,7 +164,7 @@ public class GcCounter : DrawableGameComponent
         // Compute size of border area.
         var size = font.MeasureString(_stringBuilder);
         //size.X = Math.Max(size.X, MaxGraphFrames * AllocationBarWidth);
-        var rc = new Rectangle(0, BaseGame.Instance.Window.ClientBounds.Height - 60, (int)size.X + 0, (int)size.Y + 0);
+        var rc = new Rectangle(0, PongGame.Instance.Window.ClientBounds.Height - 60, (int)size.X + 0, (int)size.Y + 0);
 
         var layout = new Layout(spriteBatch.GraphicsDevice.Viewport);
         rc = layout.Place(rc, 0.01f, 0.05f, Align.TopRight);
@@ -180,7 +180,7 @@ public class GcCounter : DrawableGameComponent
         spriteBatch.Draw(_debugManager.WhiteTexture, rc, DebugSystem.DebugResources.OverlayColor);
         spriteBatch.DrawString(font, _stringBuilder, pos, Color.White);
 
-        var y = BaseGame.Instance.Window.ClientBounds.Height - 60;
+        var y = PongGame.Instance.Window.ClientBounds.Height - 60;
         DebugSystem.Plotter.DrawLines("Memory Tick (Bytes)", _tickBytes, new Vector2(8, y), new Vector2(128, 48));
         DebugSystem.Plotter.DrawLines("Total (MB)", _totalMegabytes, new Vector2(144, y), new Vector2(64, 48), 2);
         DebugSystem.Plotter.DrawGauge("Xbox", new Vector2(216, y), new Vector2(16, 48), MathHelper.Clamp(_baseMemory / (float)OneMegabyte, 0.0f, 1.0f));

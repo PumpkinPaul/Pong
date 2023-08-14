@@ -54,7 +54,7 @@ public class FpsCounter : DrawableGameComponent
     public override void Draw(GameTime gameTime)
     {
         _sampleFrames++;
-        var y = BaseGame.Instance.Window.ClientBounds.Height - 60;
+        var y = PongGame.Instance.Window.ClientBounds.Height - 60;
         DebugSystem.DebugResources.SpriteBatch.Begin();
         DebugSystem.Plotter.DrawLines("FPS", _fps, new Vector2(272, y), DebugSystem.MediumPlotSize, 0, FlatTheme.BelizeHole);
         DebugSystem.DebugResources.SpriteBatch.End();

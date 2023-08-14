@@ -10,7 +10,7 @@ using System.IO;
 
 namespace Pong.Engine;
 
-public abstract class BaseGame : Game
+public abstract class PongGame : Game
 {
     public const int SCREEN_WIDTH = 800;
     public const int SCREEN_HEIGHT = 452;
@@ -19,12 +19,12 @@ public abstract class BaseGame : Game
 
     public static string LocalApplicationDataPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), InternalName);
 
-    public static BaseGame Instance { get; private set; }
+    public static PongGame Instance { get; private set; }
 
     public static readonly Random Random = new();
 
     public GraphicsDeviceManager Graphics { get; }
-    protected SpriteBatch SpriteBatch;
+    public SpriteBatch SpriteBatch { get; private set; }
 
     public Matrix ModelMatrix = Matrix.Identity;
     public Matrix ViewMatrix = Matrix.Identity;
@@ -43,7 +43,7 @@ public abstract class BaseGame : Game
 
     protected Effect EntityShader;
 
-    protected BaseGame()
+    protected PongGame()
     {
         Instance = this;
 
@@ -105,6 +105,18 @@ public abstract class BaseGame : Game
         Resources.GameFont = TtfFontBaker.Bake(
             File.ReadAllBytes(@"D:\Source\Temp\Revision\HeroicLabs\Pong\Source\Pong\Pong\bin\Debug\net7.0\Content\Fonts\SquaredDisplay.ttf"),
             96,
+            1024,
+            1024,
+            new[] {
+                CharacterRange.BasicLatin,
+                CharacterRange.Latin1Supplement,
+                CharacterRange.LatinExtendedA,
+                CharacterRange.Cyrillic
+           }).CreateSpriteFont(GraphicsDevice);
+
+        Resources.SmallFont = TtfFontBaker.Bake(
+            File.ReadAllBytes(@"D:\Source\Temp\Revision\HeroicLabs\Pong\Source\Pong\Pong\bin\Debug\net7.0\Content\Fonts\SquaredDisplay.ttf"),
+            32,
             1024,
             1024,
             new[] {

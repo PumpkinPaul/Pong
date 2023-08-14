@@ -11,7 +11,7 @@
     <AssemblyVersion>0.0.3</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -27,7 +27,6 @@
     <Compile Remove="Engine\Extensions\DirectoryInfoExtensions.cs" />
     <Compile Remove="Engine\Extensions\EnumExtensions.cs" />
     <Compile Remove="Engine\Extensions\FloatExtensions.cs" />
-    <Compile Remove="Engine\Extensions\IDictionaryExtensions.cs" />
     <Compile Remove="Engine\Extensions\IntExtensions.cs" />
     <Compile Remove="Engine\Extensions\ListExtensions.cs" />
     <Compile Remove="Engine\Extensions\ObjectExtensions.cs" />

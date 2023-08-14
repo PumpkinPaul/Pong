@@ -18,7 +18,7 @@ namespace Pong.SinglePlayer;
 /// This will for the basis of subsequent multiplayer versions.
 /// These versions of pong are deliberately very simple, they'll use a basic pure ECS from Moontools but that is not the focus.
 /// </remarks>
-public class SinglePlayerGame : BaseGame
+public class SinglePlayerGame : PongGame
 {
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //ECS

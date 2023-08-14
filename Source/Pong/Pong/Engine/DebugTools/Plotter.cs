@@ -22,7 +22,7 @@ public class Plotter
     public void Initialize()
     {
         // Register 'GC' command if debug command is registered as a service.
-        var debugCommand = BaseGame.Instance.Services.GetService(typeof(IDebugCommandHost)) as IDebugCommandHost;
+        var debugCommand = PongGame.Instance.Services.GetService(typeof(IDebugCommandHost)) as IDebugCommandHost;
 
         if (debugCommand != null)
         {

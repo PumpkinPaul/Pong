@@ -8,7 +8,7 @@ namespace Pong.Engine.DebugTools;
 public class DebugSettings
 {
     [JsonIgnore]
-    public static string FullPath => Path.Combine(BaseGame.LocalApplicationDataPath, "DebugSettings.json");
+    public static string FullPath => Path.Combine(PongGame.LocalApplicationDataPath, "DebugSettings.json");
 
     public static DebugSettings Create()
     {

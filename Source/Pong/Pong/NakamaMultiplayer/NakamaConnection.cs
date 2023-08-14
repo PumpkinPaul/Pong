@@ -3,6 +3,7 @@
 using Nakama;
 using Pong.Engine;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Pong.NakamaMultiplayer;
@@ -14,14 +15,13 @@ public class NakamaConnection
     public int Port = 7350;
     public string ServerKey = "defaultkey";
 
-    readonly PlayerProfile _playerProfile;
-
     public IClient Client;
     public ISession Session;
     public ISocket Socket;
 
-    private string currentMatchmakingTicket;
-    private string currentMatchId;
+    readonly PlayerProfile _playerProfile;
+
+    string _currentMatchmakingTicket;
 
     public NakamaConnection(
         PlayerProfile playerProfile)
@@ -88,5 +88,37 @@ public class NakamaConnection
         Logger.WriteLine($"Connect a Socket...");
         Socket = Nakama.Socket.From(Client);
         await Socket.ConnectAsync(Session, true);
+    }
+
+    /// <summary>
+    /// Starts looking for a match with a given number of minimum players.
+    /// </summary>
+    public async Task FindMatch(int minPlayers = 2)
+    {
+        Logger.WriteLine($"Find match...");
+
+        // Set some matchmaking properties to ensure we only look for games that are using the Unity client.
+        // This is not a required when using the Unity Nakama SDK, 
+        // however in this instance we are using it to differentiate different matchmaking requests across multiple platforms using the same Nakama server.
+        var matchmakingProperties = new Dictionary<string, string>
+        {
+            { "engine", "fna" }
+        };
+
+        // Add this client to the matchmaking pool and get a ticket.
+        var matchmakerTicket = await Socket.AddMatchmakerAsync("+properties.engine:fna", minPlayers, minPlayers, matchmakingProperties);
+        _currentMatchmakingTicket = matchmakerTicket.Ticket;
+
+        Logger.WriteLine($"matchmakerTicket: {_currentMatchmakingTicket}");
+    }
+
+    /// <summary>
+    /// Cancels the current matchmaking request.
+    /// </summary>
+    public async Task CancelMatchmaking()
+    {
+        Logger.WriteLine($"Cancel matchmaking: {_currentMatchmakingTicket}");
+
+        await Socket.RemoveMatchmakerAsync(_currentMatchmakingTicket);
     }
 }
