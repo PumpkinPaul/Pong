@@ -9,6 +9,7 @@ static class Program
     [STAThread]
     static void Main()
     {
-        new SinglePlayer.SinglePlayerGame().Run();
+        //new SinglePlayer.SinglePlayerGame().Run();
+        new NakamaMultiplayer.NakamaMultiplayerGame().Run();
     }
 }
