@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Target Name="BeforeBuild">
+	  <Message Importance="High" Text="++++++ Copying FNA native dependencies ++++++" />
+	</Target>
+	
+	<ItemGroup>
+		<Content Include="..\..\Deploy\Dependencies\Windows\x64\*.*">
+			<Link>x64\%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	
+</Project>
+
