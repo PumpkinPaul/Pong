@@ -22,14 +22,8 @@ public readonly record struct LocalPlayerSpawnMessage(
 /// </summary>
 public class LocalPlayerSpawnSystem : MoonTools.ECS.System
 {
-    readonly PlayerEntityMapper _playerEntityMapper;
-
-    public LocalPlayerSpawnSystem(
-        World world,
-        PlayerEntityMapper playerEntityMapper
-    ) : base(world)
+    public LocalPlayerSpawnSystem(World world) : base(world)
     {
-        _playerEntityMapper = playerEntityMapper;
     }
 
     public override void Update(TimeSpan delta)
@@ -37,8 +31,6 @@ public class LocalPlayerSpawnSystem : MoonTools.ECS.System
         foreach (var message in ReadMessages<LocalPlayerSpawnMessage>())
         {
             var entity = CreateEntity();
-
-            _playerEntityMapper.MapEntity(message.PlayerIndex, entity);
 
             Set(entity, new PlayerInputComponent(message.PlayerIndex, message.MoveUpKey, message.MoveDownKey));
             Set(entity, new PositionComponent(message.Position));

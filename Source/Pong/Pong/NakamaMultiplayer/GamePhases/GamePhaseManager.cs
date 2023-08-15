@@ -55,12 +55,12 @@ public class GamePhaseManager
 
     public void Update()
     {
-        ActivePhase.Update();
+        ActivePhase?.Update();
     }
 
     public void Draw()
     {
-        ActivePhase.Draw();
+        ActivePhase?.Draw();
     }
 }
 

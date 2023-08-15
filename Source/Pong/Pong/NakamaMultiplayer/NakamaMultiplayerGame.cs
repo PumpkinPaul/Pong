@@ -34,6 +34,7 @@ public class NakamaMultiplayerGame : PongGame
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //Multiplayer
     readonly NakamaConnection _nakamaConnection;
+    readonly NetworkGameManager _networkGameManager;
 
     public NakamaMultiplayerGame()
     {
@@ -42,27 +43,22 @@ public class NakamaMultiplayerGame : PongGame
         _playerProfile = PlayerProfile.LoadOrCreate(LocalApplicationDataPath);
 
         _nakamaConnection = new NakamaConnection(_playerProfile);
+        _networkGameManager = new NetworkGameManager(_nakamaConnection);
 
         GamePhaseManager = new GamePhaseManager();
         GamePhaseManager.Add(new MainMenuPhase(_nakamaConnection));
-        GamePhaseManager.Add(new PlayGamePhase(_nakamaConnection));
+        GamePhaseManager.Add(new PlayGamePhase(_networkGameManager));
     }
 
     protected async override void Initialize()
     {
         base.Initialize();
 
-        GamePhaseManager.Initialise();
-        GamePhaseManager.ChangePhase<MainMenuPhase>();
-
-        await _nakamaConnection.Connect();
-
+        await _networkGameManager.Connect();
         _nakamaConnection.Socket.ReceivedMatchmakerMatched += OnReceivedMatchmakerMatched;
 
-        var playGamePhase = GamePhaseManager.Get<PlayGamePhase>();
-        _nakamaConnection.Socket.ReceivedMatchmakerMatched += playGamePhase.OnReceivedMatchmakerMatched;
-        _nakamaConnection.Socket.ReceivedMatchPresence += playGamePhase.OnReceivedMatchPresence;
-        _nakamaConnection.Socket.ReceivedMatchState += playGamePhase.OnReceivedMatchState;
+        GamePhaseManager.Initialise();
+        GamePhaseManager.ChangePhase<MainMenuPhase>();
     }
 
     /// <summary>

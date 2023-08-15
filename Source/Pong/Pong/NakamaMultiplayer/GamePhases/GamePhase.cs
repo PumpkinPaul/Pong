@@ -1,7 +1,5 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
-using Microsoft.Xna.Framework.Graphics;
-
 namespace Pong.NakamaMultiplayer;
 
 /// <summary>
@@ -30,16 +28,10 @@ public abstract class GamePhase
         OnUpdate();
     }
 
-    public void Draw()
-    {
-        OnDraw();
-    }
-
-    public void Destroy()
-    {
-        OnDestroy();
-    }
-
+    public void Draw() => OnDraw();
+    
+    public void Destroy() => OnDestroy();
+    
     protected virtual void OnCreate() { }
     protected virtual void OnUpdate() { }
     protected virtual void OnDraw() { }

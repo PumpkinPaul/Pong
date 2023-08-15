@@ -2,7 +2,6 @@
 
 using Microsoft.Xna.Framework;
 using MoonTools.ECS;
-using Nakama;
 using System.Collections.Generic;
 
 namespace Pong.NakamaMultiplayer;
@@ -12,15 +11,17 @@ namespace Pong.NakamaMultiplayer;
 /// </summary>
 public class PlayerEntityMapper
 {
-    const int INVALID_ENTITY = -1;
+    public const int INVALID_ENTITY = -1;
 
     readonly Dictionary<PlayerIndex, string> _playerIndexToSessionId = new();
     readonly Dictionary<PlayerIndex, Entity> _playerIndexToEntity = new();
     readonly Dictionary<string, Entity> _sessionIdToEntity = new();
+    readonly Dictionary<string, PlayerIndex> _sessionIdToPlayerIndex = new();
 
     public void AddPlayer(PlayerIndex playerIndex, string sessionId)
     {
         _playerIndexToSessionId[playerIndex] = sessionId;
+        _sessionIdToPlayerIndex[sessionId] = playerIndex;
     }
 
     public void MapEntity(PlayerIndex playerIndex, Entity entity)
@@ -33,12 +34,14 @@ public class PlayerEntityMapper
 
     public void RemovePlayerBySessionId(string sessionId)
     {
-        //TODO
+        var playerIndex = _sessionIdToPlayerIndex[sessionId];
+
+        _sessionIdToEntity.Remove(sessionId);
+        _sessionIdToPlayerIndex.Remove(sessionId);
+        _playerIndexToSessionId.Remove(playerIndex);
+        _playerIndexToEntity.Remove(playerIndex);
     }
 
-    public Entity GetEntityFromSessionId(string sessionId)
-    {
-        return _sessionIdToEntity[sessionId];
-        //return INVALID_ENTITY;
-    }
+    public Entity GetEntityFromSessionId(string sessionId) => 
+        _sessionIdToEntity.TryGetValue(sessionId, out var entity) ? entity : INVALID_ENTITY;
 }

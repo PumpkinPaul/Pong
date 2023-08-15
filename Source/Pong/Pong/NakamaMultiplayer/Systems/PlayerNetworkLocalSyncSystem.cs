@@ -18,25 +18,26 @@ namespace Pong.Gameplay.Systems;
 /// </summary>
 public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
 {
+    readonly NetworkGameManager _gameManager;
+
     // How often to send the player's velocity and position across the network, in seconds.
-    public float StateFrequency = 0.05f; //0.1f;
+    readonly float StateFrequency = 1 / 20f; //20 updates per second
     float _stateSyncTimer;
 
     readonly Filter _filter;
 
-    //TODO:
-    PlayGamePhase gameManager;
-
-    public PlayerNetworkLocalSyncSystem(World world) : base(world)
+    public PlayerNetworkLocalSyncSystem(
+        World world,
+        NetworkGameManager gameManager
+    ) : base(world)
     {
+        _gameManager = gameManager;
+
         _filter = FilterBuilder
             .Include<PositionComponent>()
             .Include<VelocityComponent>()
             .Include<PlayerInputComponent>()
             .Build();
-
-        //TODO:
-        gameManager = NakamaMultiplayerGame.Instance.GamePhaseManager.Get<PlayGamePhase>();
     }
 
     public override void Update(TimeSpan delta)
@@ -52,7 +53,7 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
             if (_stateSyncTimer <= 0)
             {
                 // Send a network packet containing the player's velocity and position.
-                gameManager.SendMatchState(
+                _gameManager.SendMatchState(
                     OpCodes.VelocityAndPosition,
                     MatchDataJson.VelocityAndPosition(velocity.Value, position.Value));
 
@@ -60,6 +61,9 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
             }
 
             _stateSyncTimer -= (float)delta.TotalSeconds;
+
+            //TODO: add something exciting into the input - rockets? :-)
+            continue;
 
             //TODO: Should use a GameInput wrapper here instead of PlayerInput directly
             ref readonly var playerInput = ref Get<PlayerInputComponent>(entity);
@@ -72,7 +76,7 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
                 continue;
 
             // Send network packet with the player's current input.
-            gameManager.SendMatchState(
+            _gameManager.SendMatchState(
                 OpCodes.Input,
                 MatchDataJson.Input(moveUp, moveDown)
             );

@@ -98,7 +98,9 @@ public class NakamaConnection
     /// </summary>
     public async Task FindMatch(int minPlayers = 2)
     {
+        Logger.WriteLine("==================================================");
         Logger.WriteLine($"Find match...");
+        Logger.WriteLine("==================================================");
 
         // Set some matchmaking properties to ensure we only look for games that are using the Unity client.
         // This is not a required when using the Unity Nakama SDK, 
@@ -120,7 +122,9 @@ public class NakamaConnection
     /// </summary>
     public async Task CancelMatchmaking()
     {
+        Logger.WriteLine("==================================================");
         Logger.WriteLine($"Cancel matchmaking: {_currentMatchmakingTicket}");
+        Logger.WriteLine("==================================================");
 
         await Socket.RemoveMatchmakerAsync(_currentMatchmakingTicket);
     }
