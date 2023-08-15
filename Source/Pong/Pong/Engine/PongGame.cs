@@ -29,6 +29,7 @@ public abstract class PongGame : Game
     public Matrix ModelMatrix = Matrix.Identity;
     public Matrix ViewMatrix = Matrix.Identity;
     public Matrix ProjectionMatrix;
+    public Matrix TextMatrix;
 
     public KeyboardState KeyboardState;
     public KeyboardState PreviousKeyboardState;
@@ -78,6 +79,10 @@ public abstract class PongGame : Game
     protected override void Initialize()
     {
         ProjectionMatrix = Matrix.CreateOrthographicOffCenter(0, GraphicsDevice.Viewport.Width, 0, GraphicsDevice.Viewport.Height, 0, 1);
+
+        TextMatrix = Matrix.Identity;
+        TextMatrix.Translation = new Vector3(0, GraphicsDevice.Viewport.Height, 1f);
+        TextMatrix.Down = new Vector3(0, 1, 0);
 
         //Calls LoadContent
         base.Initialize();

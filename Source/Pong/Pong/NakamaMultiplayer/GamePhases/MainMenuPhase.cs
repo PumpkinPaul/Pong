@@ -1,8 +1,14 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Pong.Engine;
+using Pong.Engine.Extensions;
+using Pong.Gameplay.Renderers;
+using Pong.Gameplay;
+using System.Runtime.Intrinsics.Arm;
+using MoonTools.ECS;
 
 namespace Pong.NakamaMultiplayer.GamePhases;
 
@@ -59,19 +65,22 @@ public class MainMenuPhase : GamePhase
 
         var spriteBatch = PongGame.Instance.SpriteBatch;
 
+        var centreX = PongGame.SCREEN_WIDTH * 0.5f;
+
         //Draw the UI
-        spriteBatch.Begin();
-        spriteBatch.DrawString(Resources.GameFont, "Pong", new Vector2(300, PongGame.SCREEN_HEIGHT * 0.25f), Color.Red);
-        
-        switch(_phase)
+        spriteBatch.BeginTextRendering();
+
+        spriteBatch.DrawText(Resources.GameFont, "Pong", new Vector2(centreX, PongGame.SCREEN_HEIGHT * 0.65f), Color.Red, Alignment.Centre);
+
+        switch (_phase)
         {
             case Phase.Ready:
-                spriteBatch.DrawString(Resources.SmallFont, "Press SPACE to play!", new Vector2(250, 220), Color.Red);
+                spriteBatch.DrawText(Resources.SmallFont, "Press SPACE to play!", new Vector2(centreX, 220), Color.Red, Alignment.Centre);
                 break;
 
             case Phase.FindMatch:
-                spriteBatch.DrawString(Resources.SmallFont, "Searching for match...", new Vector2(250, 220), Color.Red);
-                spriteBatch.DrawString(Resources.SmallFont, "Press SPACE to cancel", new Vector2(240, 260), Color.Red);
+                spriteBatch.DrawText(Resources.SmallFont, "Searching for match", new Vector2(centreX, 220), Color.Red, Alignment.Centre);
+                spriteBatch.DrawText(Resources.SmallFont, "Press SPACE to cancel", new Vector2(centreX, 180), Color.Red, Alignment.Centre);
                 break;
         }
 

@@ -204,12 +204,11 @@ public class ECSManager
 
         //...play area
         spriteBatch.DrawLine(new Vector2(PongGame.SCREEN_WIDTH / 2, 0), new Vector2(PongGame.SCREEN_WIDTH / 2, PongGame.SCREEN_HEIGHT), Color.Red);
-        spriteBatch.End();
 
-        //...game UI
-        spriteBatch.Begin();
+        //..."HUD"
         spriteBatch.DrawString(Resources.GameFont, _gameState.Player1Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.25f, 21), Color.Red);
         spriteBatch.DrawString(Resources.GameFont, _gameState.Player2Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.75f, 21), Color.Red);
+
         spriteBatch.End();
     }
 }

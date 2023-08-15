@@ -8,6 +8,21 @@ namespace Pong.Engine.Extensions;
 
 public static class SpriteBatchExtensions
 {
+    public static void BeginTextRendering(this SpriteBatch sb)
+    {
+        sb.Begin(0, null, null, null, RasterizerState.CullClockwise, null, PongGame.Instance.TextMatrix);
+    }
+
+    public static void DrawText(this SpriteBatch sb, SpriteFont font, string text, Vector2 position, Color color, Alignment alignment = Alignment.BottomLeft)
+    {
+        var size = font.MeasureString(text);
+
+        if (alignment == Alignment.Centre)
+            position += new Vector2(-size.X / 2, -size.Y / 2);
+
+        sb.DrawString(font, text, position, color, 0, Vector2.Zero, 1, SpriteEffects.FlipVertically, 0);
+    }
+
     public static void DrawLine(this SpriteBatch sb, Vector2 start, Vector2 end, Color color, int thickness)
     {
         var edge = end - start;
