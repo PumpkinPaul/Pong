@@ -1,5 +1,8 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
+//Based on code from the FishGame Unity sample from Herioc Labs.
+//https://github.com/heroiclabs/fishgame-unity/blob/main/FishGame/Assets/Nakama/NakamaConnection.cs
+
 using Nakama;
 using Pong.Engine;
 using System;

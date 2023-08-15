@@ -7,4 +7,4 @@ public readonly record struct CausesBounceComponent(
     //If the sign of this mask matches the sign of the velocity then a bounce can occur
     ////This stops slightly embedded objects causing a juddering
     int BounceDirection
- );
+);

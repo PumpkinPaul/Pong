@@ -19,6 +19,8 @@ namespace Pong.NakamaMultiplayer;
 /// </remarks>
 public class NakamaMultiplayerGame : PongGame
 {
+    public new static NakamaMultiplayerGame Instance => (NakamaMultiplayerGame)PongGame.Instance;
+
     public readonly GamePhaseManager GamePhaseManager;
 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
@@ -69,7 +71,8 @@ public class NakamaMultiplayerGame : PongGame
     /// <param name="matched">The MatchmakerMatched data.</param>
     public void OnReceivedMatchmakerMatched(IMatchmakerMatched matched)
     {
-        Logger.WriteLine($"NakamaMultiplayerGame.OnReceivedMatchmakerMatched: {matched}");
+        Logger.WriteLine($"NakamaMultiplayerGame.OnReceivedMatchmakerMatched");
+        Logger.WriteLine($"Changing game phase to begin a new play session");
 
         GamePhaseManager.ChangePhase<PlayGamePhase>();
     }

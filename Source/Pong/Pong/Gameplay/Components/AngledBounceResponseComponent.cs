@@ -5,4 +5,5 @@ using MoonTools.ECS;
 namespace Pong.Gameplay.Components;
 
 public readonly record struct AngledBounceResponseComponent(
-    Entity BouncedBy);
+    Entity BouncedBy
+);

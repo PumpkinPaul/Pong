@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MoonTools.ECS;
 using Pong.Gameplay.Components;
+using Pong.NakamaMultiplayer;
 using System;
 
 namespace Pong.Gameplay.Systems;
@@ -21,7 +22,7 @@ public readonly record struct PlayerSpawnMessage(
 /// Responsible for spawning Player entities with the correct components.
 /// </summary>
 public class PlayerSpawnSystem : MoonTools.ECS.System
-{
+{    
     public PlayerSpawnSystem(World world) : base(world)
     {
     }

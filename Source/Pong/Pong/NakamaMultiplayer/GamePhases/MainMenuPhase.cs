@@ -27,6 +27,13 @@ public class MainMenuPhase : GamePhase
         _nakamaConnection = nakamaConnection;
     }
 
+    protected override void OnCreate()
+    {
+        base.OnCreate();
+
+        _phase = Phase.Ready;
+    }
+
     protected async override void OnUpdate()
     {
         base.OnUpdate();
@@ -45,7 +52,6 @@ public class MainMenuPhase : GamePhase
             }
         }
     }
-
 
     protected override void OnDraw()
     {

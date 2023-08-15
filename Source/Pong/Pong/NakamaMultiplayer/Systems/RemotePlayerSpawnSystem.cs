@@ -8,6 +8,7 @@ using System;
 namespace Pong.NakamaMultiplayer.Systems;
 
 public readonly record struct RemotePlayerSpawnMessage(
+    PlayerIndex PlayerIndex,
     Vector2 Position,
     Color Color,
     int BounceDirection
@@ -18,8 +19,14 @@ public readonly record struct RemotePlayerSpawnMessage(
 /// </summary>
 public class RemotePlayerSpawnSystem : MoonTools.ECS.System
 {
-    public RemotePlayerSpawnSystem(World world) : base(world)
+    readonly PlayerEntityMapper _playerEntityMapper;
+
+    public RemotePlayerSpawnSystem(
+        World world,
+        PlayerEntityMapper playerEntityMapper
+    ) : base(world)
     {
+        _playerEntityMapper = playerEntityMapper;
     }
 
     public override void Update(TimeSpan delta)
@@ -27,6 +34,8 @@ public class RemotePlayerSpawnSystem : MoonTools.ECS.System
         foreach (var message in ReadMessages<RemotePlayerSpawnMessage>())
         {
             var entity = CreateEntity();
+
+            _playerEntityMapper.MapEntity(message.PlayerIndex, entity);
 
             Set(entity, new PositionComponent(message.Position));
             Set(entity, new ScaleComponent(new Vector2(16, 64)));

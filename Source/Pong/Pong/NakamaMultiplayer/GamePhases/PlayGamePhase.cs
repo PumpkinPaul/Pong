@@ -5,13 +5,17 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MoonTools.ECS;
 using Nakama;
+using Newtonsoft.Json;
 using Pong.Engine;
 using Pong.Engine.Extensions;
 using Pong.Gameplay.Renderers;
 using Pong.Gameplay.Systems;
+using Pong.NakamaMultiplayer.GamePhases;
+using Pong.NakamaMultiplayer.Players;
 using Pong.NakamaMultiplayer.Systems;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pong.NakamaMultiplayer;
@@ -28,11 +32,14 @@ public class PlayGamePhase : GamePhase
     readonly NakamaConnection _nakamaConnection;
 
     IUserPresence _localUser;
-    IMatch _currentMatch;
+
+    //TODO: better - stop this from being public
+    public IMatch _currentMatch;
 
     readonly Queue<LocalPlayerSpawnMessage> _localPlayerSpawnMessages = new();
     readonly Queue<RemotePlayerSpawnMessage> _remotePlayerSpawnMessages = new();
-
+    readonly Queue<MatchDataVelocityAndPositionMessage> _matchDataVelocityAndPositionMessage = new();
+    
     MultiplayerGameState _gameState;
     
     const int PLAYER_OFFSET_X = 32;
@@ -43,30 +50,10 @@ public class PlayGamePhase : GamePhase
     int _playerSpawnPointsIdx = 0;
     int _bounceDirection = -1;
 
-    //Need some way to track players outside of the ECS
-    class Player
-    {
-        
-    }
-
-    class LocalPlayer : Player
-    {
-
-    }
-
-    class NetworkPlayer : Player
-    {
-        internal RemotePlayerNetworkData NetworkData { get; init; }
-    }
-
-    public class RemotePlayerNetworkData
-    {
-        public string MatchId { get; init; }
-        public IUserPresence User { get; init; }
-    }
-
     readonly IDictionary<string, Player> _players;
     Player _localPlayer;
+
+    PlayerEntityMapper _playerEntityMapper = new();
 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
@@ -98,8 +85,8 @@ public class PlayGamePhase : GamePhase
         _systems = new MoonTools.ECS.System[]
         {
             //Spawn the entities into the game world
-            new LocalPlayerSpawnSystem(_world),
-            new RemotePlayerSpawnSystem(_world),
+            new LocalPlayerSpawnSystem(_world, _playerEntityMapper),
+            new RemotePlayerSpawnSystem(_world, _playerEntityMapper),
             new BallSpawnSystem(_world),
             new ScoreSpawnSystem(_world),
 
@@ -116,6 +103,11 @@ public class PlayGamePhase : GamePhase
             new MovementSystem(_world),
             new BounceSystem(_world),
             new AngledBounceSystem(_world),
+
+            //LateUpdate
+            new PlayerNetworkLocalSyncSystem(_world),
+            new PlayerNetworkRemoteSyncSystem(_world),
+            new LerpPositionSystem(_world)
         };
 
         _spriteRenderer = new SpriteRenderer(_world, PongGame.Instance.SpriteBatch);
@@ -138,9 +130,12 @@ public class PlayGamePhase : GamePhase
         ));
     }
 
-    protected override void OnUpdate()
+    protected async override void OnUpdate()
     {
         base.OnUpdate();
+
+        if (PongGame.Instance.KeyboardState.IsKeyDown(Keys.Space) && PongGame.Instance.PreviousKeyboardState.IsKeyUp(Keys.Space))
+            await QuitMatch();
 
         while (_localPlayerSpawnMessages.Count > 0)
             _world.Send(_localPlayerSpawnMessages.Dequeue());
@@ -148,13 +143,15 @@ public class PlayGamePhase : GamePhase
         while (_remotePlayerSpawnMessages.Count > 0)
             _world.Send(_remotePlayerSpawnMessages.Dequeue());
 
-        var delta = TimeSpan.FromSeconds(1000 / 60.0f);
+        while (_matchDataVelocityAndPositionMessage.Count > 0)
+            _world.Send(_matchDataVelocityAndPositionMessage.Dequeue());
+
+        var delta = TimeSpan.FromMilliseconds(1000 / 60.0f);
         foreach (var system in _systems)
             system.Update(delta);
 
         _world.FinishUpdate();
     }
-
 
     protected override void OnDraw()
     {
@@ -207,7 +204,7 @@ public class PlayGamePhase : GamePhase
     /// <param name="matchPresenceEvent">The MatchPresenceEvent data.</param>
     public async void OnReceivedMatchPresence(IMatchPresenceEvent matchPresenceEvent)
     {
-        Logger.WriteLine($"OnReceivedMatchmakerMatched");
+        Logger.WriteLine($"OnReceivedMatchPresence");
 
         // For each new user that joins, spawn a player for them.
         foreach (var user in matchPresenceEvent.Joins)
@@ -220,7 +217,9 @@ public class PlayGamePhase : GamePhase
         {
             if (_players.ContainsKey(user.SessionId))
             {
+                //TODO: sync players leaving with the ECS
                 //QueueDestoryPlayer(matchPresenceEvent.MatchId, user);
+                _playerEntityMapper.RemovePlayerBySessionId(user.SessionId);
                 _players.Remove(user.SessionId);
             }
         }
@@ -232,11 +231,59 @@ public class PlayGamePhase : GamePhase
     /// Called when new match state is received.
     /// </summary>
     /// <param name="matchState">The MatchState data.</param>
-    public async void OnReceivedMatchState(IMatchState matchState)
+    public void OnReceivedMatchState(IMatchState matchState)
     {
-        Logger.WriteLine($"OnReceivedMatchmakerMatched");
+        Logger.WriteLine($"OnReceivedMatchState: {matchState.OpCode}");
 
-        await Task.Yield();
+        if (!_players.TryGetValue(matchState.UserPresence.SessionId, out var player))
+            return;
+
+        // If the incoming data is not related to this remote player, ignore it and return early.
+        var networkPlayer = player as NetworkPlayer;
+        if (matchState.UserPresence.SessionId != networkPlayer?.NetworkData?.User?.SessionId)
+            return;
+
+        // Decide what to do based on the Operation Code of the incoming state data as defined in OpCodes.
+        switch (matchState.OpCode)
+        {
+            case OpCodes.VelocityAndPosition:
+                UpdateVelocityAndPositionFromState(matchState.State, networkPlayer);
+                break;
+            //case OpCodes.Input:
+            //    SetInputFromState(matchState.State);
+            //    break;
+            default:
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Quits the current match.
+    /// </summary>
+    public async Task QuitMatch()
+    {
+        Logger.WriteLine($"QuitMatch");
+
+        // Ask Nakama to leave the match.
+        await _nakamaConnection.Socket.LeaveMatchAsync(_currentMatch);
+
+        // Reset the currentMatch and localUser variables.
+        _currentMatch = null;
+        _localUser = null;
+
+        // Destroy all existing player.
+        foreach (var player in _players.Values)
+        {
+            player.Destroy();
+        }
+
+        //TODO: Reset the ECS
+
+        // Clear the players array.
+        _players.Clear();
+
+        // Show the main menu, hide the in-game menu.
+        NakamaMultiplayerGame.Instance.GamePhaseManager.ChangePhase<MainMenuPhase>();
     }
 
     void SpawnPlayer(string matchId, IUserPresence userPresence)
@@ -262,7 +309,6 @@ public class PlayGamePhase : GamePhase
         {
             player = new LocalPlayer();
             _localPlayer = player;
-            //player.GetComponent<PlayerHealthController>().PlayerDied.AddListener(OnLocalPlayerDied);
 
             //Queue entity creation in the ECS
             _localPlayerSpawnMessages.Enqueue(new LocalPlayerSpawnMessage(
@@ -273,6 +319,8 @@ public class PlayGamePhase : GamePhase
                 Color.Red,
                 BounceDirection: _bounceDirection
             ));
+
+            _playerEntityMapper.AddPlayer(PlayerIndex.One, userPresence.SessionId);
         }
         else
         {
@@ -287,10 +335,13 @@ public class PlayGamePhase : GamePhase
 
             //Queue entity creation in the ECS
             _remotePlayerSpawnMessages.Enqueue(new RemotePlayerSpawnMessage(
+                PlayerIndex: PlayerIndex.Two,
                 Position: position,
                 Color.Blue,
                 BounceDirection: _bounceDirection
             ));
+
+            _playerEntityMapper.AddPlayer(PlayerIndex.Two, userPresence.SessionId);
         }
 
         // Add the player to the players array.
@@ -299,5 +350,59 @@ public class PlayGamePhase : GamePhase
         //Cycle through the spawn points so that players are located in the correct postions and flipping the bounce direction
         _playerSpawnPointsIdx = (_playerSpawnPointsIdx + 1) % _playerSpawnPoints.Length;
         _bounceDirection = -_bounceDirection;
+    }
+
+    /// <summary>
+    /// Updates the player's velocity and position based on incoming state data.
+    /// </summary>
+    /// <param name="state">The incoming state byte array.</param>
+    private void UpdateVelocityAndPositionFromState(byte[] state, NetworkPlayer networkPlayer)
+    {
+        var stateDictionary = GetStateAsDictionary(state);
+
+        var position = new Vector2(
+            float.Parse(stateDictionary["position.x"]),
+            float.Parse(stateDictionary["position.y"]));
+
+        //Queue entity to begin lerping to the corrected position.
+        _matchDataVelocityAndPositionMessage.Enqueue(new MatchDataVelocityAndPositionMessage(
+            LerpToPosition: position,
+            Entity: GetEntityFromNetworkPlayer(networkPlayer)
+        ));
+    }
+
+    Entity GetEntityFromNetworkPlayer(NetworkPlayer networkPlayer)
+    {
+        return _playerEntityMapper.GetEntityFromSessionId(networkPlayer.NetworkData.User.SessionId);
+    }
+
+    /// <summary>
+    /// Converts a byte array of a UTF8 encoded JSON string into a Dictionary.
+    /// </summary>
+    /// <param name="state">The incoming state byte array.</param>
+    /// <returns>A Dictionary containing state data as strings.</returns>
+    static IDictionary<string, string> GetStateAsDictionary(byte[] state)
+    {
+        return JsonConvert.DeserializeObject<Dictionary<string, string>>(Encoding.UTF8.GetString(state));
+    }
+
+    /// <summary>
+    /// Sends a match state message across the network.
+    /// </summary>
+    /// <param name="opCode">The operation code.</param>
+    /// <param name="state">The stringified JSON state data.</param>
+    public async Task SendMatchStateAsync(long opCode, string state)
+    {
+        await _nakamaConnection.Socket.SendMatchStateAsync(_currentMatch.Id, opCode, state);
+    }
+
+    /// <summary>
+    /// Sends a match state message across the network.
+    /// </summary>
+    /// <param name="opCode">The operation code.</param>
+    /// <param name="state">The stringified JSON state data.</param>
+    public void SendMatchState(long opCode, string state)
+    {
+        _nakamaConnection.Socket.SendMatchStateAsync(_currentMatch.Id, opCode, state);
     }
 }
