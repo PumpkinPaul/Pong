@@ -8,7 +8,7 @@ using System.IO;
 namespace Pong.NakamaMultiplayer;
 
 /// <summary>
-/// Basic info about a player
+/// Basic info about a player.
 /// </summary>
 /// <remarks>
 /// This info will be read / write to file system.
@@ -21,7 +21,6 @@ public class PlayerProfile
 
     [JsonRequired]
     public string FullPath { get; private set; }
-
 
     public static PlayerProfile LoadOrCreate(string path)
     {

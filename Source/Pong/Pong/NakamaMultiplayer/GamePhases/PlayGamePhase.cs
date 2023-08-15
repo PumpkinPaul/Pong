@@ -1,54 +1,22 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MoonTools.ECS;
 using Pong.Engine;
-using Pong.Engine.Extensions;
-using Pong.Gameplay.Renderers;
-using Pong.Gameplay.Systems;
-using Pong.NakamaMultiplayer.GamePhases;
-using Pong.NakamaMultiplayer.Systems;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Pong.NakamaMultiplayer;
 
 /// <summary>
-/// Playing the game
+/// Playing the game phase
 /// </summary>
 public class PlayGamePhase : GamePhase
 {
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //Multiplayer networking
     readonly NetworkGameManager _networkGameManager;
-
-    MultiplayerGameState _gameState;
-
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //ECS
-    World _world;
-
-    //Systems
-    MoonTools.ECS.System[] _systems;
-
-    //Renderers
-    SpriteRenderer _spriteRenderer;
-
-    readonly Queue<LocalPlayerSpawnMessage> _localPlayerSpawnMessages = new();
-    readonly Queue<RemotePlayerSpawnMessage> _remotePlayerSpawnMessages = new();
-    readonly Queue<MatchDataVelocityAndPositionMessage> _matchDataVelocityAndPositionMessage = new();
-    readonly Queue<DestroyEntityMessage> _destroyEntityMessage = new();
-
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    ECSManager _ecsManager;
     //Mapping between networking and ECS
     readonly PlayerEntityMapper _playerEntityMapper = new();
 
@@ -59,8 +27,8 @@ public class PlayGamePhase : GamePhase
     public event EventHandler ExitedMatch;
 
     const int PLAYER_OFFSET_X = 32;
-    
-    Vector2[] _playerSpawnPoints = new[] {
+
+    readonly Vector2[] _playerSpawnPoints = new[] {
         new Vector2(PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2),
         new Vector2(PongGame.SCREEN_WIDTH - PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2)
     };
@@ -78,59 +46,7 @@ public class PlayGamePhase : GamePhase
     {
         base.Initialise();
 
-        _world = new World();
-        _gameState = new MultiplayerGameState();
-
-        _systems = new MoonTools.ECS.System[]
-        {
-            //Spawn the entities into the game world
-            new LocalPlayerSpawnSystem(_world),
-            new RemotePlayerSpawnSystem(_world, _playerEntityMapper),
-            new BallSpawnSystem(_world),
-            new ScoreSpawnSystem(_world),
-
-            new PlayerInputSystem(_world),   //Get input from devices and turn into game actions...
-            new PlayerActionsSystem(_world), //...then process the actions (e.g. do a jump, fire a gun, etc)
-
-            //Turn directions into velocity!
-            new DirectionalSpeedSystem(_world),
-
-            //Collisions processors
-            new WorldCollisionSystem(_world, _gameState, new Point(PongGame.SCREEN_WIDTH, PongGame.SCREEN_HEIGHT)),
-            new EntityCollisionSystem(_world, PongGame.SCREEN_WIDTH),
-
-            //Move the entities in the world
-            new MovementSystem(_world),
-            new BounceSystem(_world),
-            new AngledBounceSystem(_world),
-
-            //LateUpdate
-            new PlayerNetworkLocalSyncSystem(_world, _networkGameManager),
-            new PlayerNetworkRemoteSyncSystem(_world),
-            new LerpPositionSystem(_world),
-
-            //Remove the dead entities
-            new DestroyEntitySystem(_world)
-        };
-
-        _spriteRenderer = new SpriteRenderer(_world, PongGame.Instance.SpriteBatch);
-
-        var color = Color.Red;
-
-        _world.Send(new BallSpawnMessage(
-            Position: new Vector2(PongGame.SCREEN_WIDTH, PongGame.SCREEN_HEIGHT) / 2,
-            color
-        ));
-
-        _world.Send(new ScoreSpawnMessage(
-            PlayerIndex: PlayerIndex.One,
-            Position: new Vector2(PongGame.SCREEN_WIDTH * 0.25f, 21)
-        ));
-
-        _world.Send(new ScoreSpawnMessage(
-            PlayerIndex: PlayerIndex.Two,
-            Position: new Vector2(PongGame.SCREEN_WIDTH * 0.75f, 21)
-        ));
+        _ecsManager = new ECSManager(_networkGameManager, _playerEntityMapper);
 
         _networkGameManager.SpawnedLocalPlayer += OnSpawnedLocalPlayer;
         _networkGameManager.SpawnedRemotePlayer += OnSpawnedRemotePlayer;
@@ -145,50 +61,14 @@ public class PlayGamePhase : GamePhase
         if (PongGame.Instance.KeyboardState.IsKeyDown(Keys.Space) && PongGame.Instance.PreviousKeyboardState.IsKeyUp(Keys.Space))
             await QuitMatch();
 
-        SendMessages();
-
-        foreach (var system in _systems)
-            system.Update(PongGame.Instance.TargetElapsedTime);
-
-        _world.FinishUpdate();
-    }
-
-    private void SendMessages()
-    {
-        while (_localPlayerSpawnMessages.Count > 0)
-            _world.Send(_localPlayerSpawnMessages.Dequeue());
-
-        while (_remotePlayerSpawnMessages.Count > 0)
-            _world.Send(_remotePlayerSpawnMessages.Dequeue());
-
-        while (_matchDataVelocityAndPositionMessage.Count > 0)
-            _world.Send(_matchDataVelocityAndPositionMessage.Dequeue());
-
-        while (_destroyEntityMessage.Count > 0)
-            _world.Send(_destroyEntityMessage.Dequeue());
+        _ecsManager.Update();
     }
 
     protected override void OnDraw()
     {
         base.OnDraw();
 
-        var spriteBatch = PongGame.Instance.SpriteBatch;
-
-        //Draw the world
-        spriteBatch.Begin(0, BlendState.AlphaBlend, null, null, RasterizerState.CullClockwise, PongGame.Instance.BasicEffect);
-
-        //...all the entities
-        _spriteRenderer.Draw();
-
-        //...play area
-        spriteBatch.DrawLine(new Vector2(PongGame.SCREEN_WIDTH / 2, 0), new Vector2(PongGame.SCREEN_WIDTH / 2, PongGame.SCREEN_HEIGHT), Color.Red);
-        spriteBatch.End();
-
-        //...game UI
-        spriteBatch.Begin();
-        spriteBatch.DrawString(Resources.GameFont, _gameState.Player1Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.25f, 21), Color.Red);
-        spriteBatch.DrawString(Resources.GameFont, _gameState.Player2Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.75f, 21), Color.Red);
-        spriteBatch.End();
+        _ecsManager.Draw();
     }
 
     /// <summary>
@@ -207,15 +87,7 @@ public class PlayGamePhase : GamePhase
     {
         var position = _playerSpawnPoints[_playerSpawnPointsIdx];
 
-        //Queue entity creation in the ECS
-        _localPlayerSpawnMessages.Enqueue(new LocalPlayerSpawnMessage(
-            PlayerIndex: PlayerIndex.One,
-            MoveUpKey: Keys.Q,
-            MoveDownKey: Keys.A,
-            Position: position,
-            Color.Red,
-            BounceDirection: _bounceDirection
-        ));
+        _ecsManager.SpawnLocalPlayer(position, _bounceDirection);
 
         PrepareNextPlayer();
     }
@@ -224,20 +96,14 @@ public class PlayGamePhase : GamePhase
     {
         var position = _playerSpawnPoints[_playerSpawnPointsIdx];
 
-        //Queue entity creation in the ECS
-        _remotePlayerSpawnMessages.Enqueue(new RemotePlayerSpawnMessage(
-            PlayerIndex: PlayerIndex.Two,
-            Position: position,
-            Color.Blue,
-            BounceDirection: _bounceDirection
-        ));
+        _ecsManager.SpawnRemotePlayer(position, _bounceDirection);
 
         _playerEntityMapper.AddPlayer(PlayerIndex.Two, e.SessionId);
 
         PrepareNextPlayer();
     }
 
-    private void PrepareNextPlayer()
+    void PrepareNextPlayer()
     {
         //Cycle through the spawn points so that players are located in the correct postions and flipping the bounce direction
         _playerSpawnPointsIdx = (_playerSpawnPointsIdx + 1) % _playerSpawnPoints.Length;
@@ -246,30 +112,11 @@ public class PlayGamePhase : GamePhase
 
     void OnReceivedRemotePlayerPosition(object sender, ReceivedRemotePlayerPositionEventArgs e)
     {
-        var entity = _playerEntityMapper.GetEntityFromSessionId(e.SessionId);
-
-        if (entity == PlayerEntityMapper.INVALID_ENTITY)
-            return;
-
-        //Queue entity to begin lerping to the corrected position.
-        _matchDataVelocityAndPositionMessage.Enqueue(new MatchDataVelocityAndPositionMessage(
-            LerpToPosition: e.Position,
-            Entity: entity
-        ));
+        _ecsManager.ReceivedMatchDataVelocityAndPosition(e.Position, e.SessionId);
     }
 
     void OnRemovedPlayer(object sender, RemovedPlayerEventArgs e)
     {
-        var entity = _playerEntityMapper.GetEntityFromSessionId(e.SessionId);
-
-        if (entity == PlayerEntityMapper.INVALID_ENTITY)
-            return;
-
-        _playerEntityMapper.RemovePlayerBySessionId(e.SessionId);
-
-        //Queue entity to begin lerping to the corrected position.
-        _destroyEntityMessage.Enqueue(new DestroyEntityMessage(
-            Entity: entity
-        ));
+        _ecsManager.DestroyEntity(e.SessionId);
     }
 }

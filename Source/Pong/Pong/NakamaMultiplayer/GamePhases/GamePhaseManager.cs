@@ -1,5 +1,6 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
+using Microsoft.Xna.Framework.Input;
 using Pong.Engine.Collections;
 using System;
 
@@ -30,37 +31,20 @@ public class GamePhaseManager
             phase.Initialise();
     }
 
-    public void ChangePhase<T>() where T : GamePhase => ChangePhase(typeof(T));
-
-    public void ChangePhase(Type type)
+    public void ChangePhase<T>() where T : GamePhase
     {
         ActivePhase?.Destroy();
 
-        var newPhase = Get(type);
+        var newPhase = Get<T>();
 
         ActivePhase = newPhase;
         ActivePhase.Create();
     }
 
-    public GamePhase Get(Type key)
-    {
-        return _gamePhases[key];
-    }
+    public T Get<T>() where T : GamePhase => (T)_gamePhases[typeof(T)];
 
-    public T Get<T>() where T : GamePhase
-    {
-        var type = typeof(T);
-        return (T)Get(type);
-    }
+    public void Update() => ActivePhase?.Update();
 
-    public void Update()
-    {
-        ActivePhase?.Update();
-    }
-
-    public void Draw()
-    {
-        ActivePhase?.Draw();
-    }
+    public void Draw() => ActivePhase?.Draw();
 }
 

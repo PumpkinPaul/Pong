@@ -17,10 +17,10 @@ namespace Pong.Gameplay.Systems;
 /// </summary>
 public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
 {
-    readonly NetworkGameManager _gameManager;
+    readonly NetworkGameManager _networkGameManager;
 
     // How often to send the player's velocity and position across the network, in seconds.
-    const int UPDATES_PER_SECOND = 20;
+    const int UPDATES_PER_SECOND = 30;
     readonly float StateFrequency = 1.0f / UPDATES_PER_SECOND;
     float _stateSyncTimer;
 
@@ -28,10 +28,10 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
 
     public PlayerNetworkLocalSyncSystem(
         World world,
-        NetworkGameManager gameManager
+        NetworkGameManager networkGameManager
     ) : base(world)
     {
-        _gameManager = gameManager;
+        _networkGameManager = networkGameManager;
 
         _filter = FilterBuilder
             .Include<PositionComponent>()
@@ -51,7 +51,7 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
             if (_stateSyncTimer <= 0)
             {
                 // Send a network packet containing the player's velocity and position.
-                _gameManager.SendMatchState(
+                _networkGameManager.SendMatchState(
                     OpCodes.VelocityAndPosition,
                     MatchDataJson.VelocityAndPosition(velocity.Value, position.Value));
 
@@ -67,7 +67,7 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
                 continue;
 
             // Send network packet with the player's current actions.
-            _gameManager.SendMatchState(
+            _networkGameManager.SendMatchState(
                 OpCodes.Input,
                 MatchDataJson.Input(playerActions.MoveUp, playerActions.MoveDown)
             );

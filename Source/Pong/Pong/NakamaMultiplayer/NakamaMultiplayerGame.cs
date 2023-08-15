@@ -10,7 +10,7 @@ using Pong.NakamaMultiplayer.GamePhases;
 namespace Pong.NakamaMultiplayer;
 
 /// <summary>
-/// Very simple multiplayer implementation of the game, PONG using the Nakama framework.
+/// Very simple multiplayer implementation of the game, PONG using the Nakama framework and the MoonTools.ECS.
 /// </summary>
 /// <remarks>
 /// Basing a solution using the Nakama documentation...

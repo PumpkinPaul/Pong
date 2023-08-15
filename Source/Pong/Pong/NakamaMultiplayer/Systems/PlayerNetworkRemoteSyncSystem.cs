@@ -16,7 +16,7 @@ public readonly record struct MatchDataVelocityAndPositionMessage(
 );
 
 /// <summary>
-/// 
+/// Reads remote match data received messages and tags each relevant entity with a lerpig component to smooth the movement.
 /// </summary>
 public sealed class PlayerNetworkRemoteSyncSystem : MoonTools.ECS.System
 {

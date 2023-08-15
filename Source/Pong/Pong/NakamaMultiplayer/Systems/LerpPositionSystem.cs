@@ -11,14 +11,14 @@ using System;
 namespace Pong.Gameplay.Systems;
 
 /// <summary>
-/// 
+/// Interpolates a network entity's position from a source to a target postion over a series of updates
 /// </summary>
 public sealed class LerpPositionSystem : MoonTools.ECS.System
 {
     /// <summary>
     /// The speed (in seconds) in which to smoothly interpolate to the entity's actual position when receiving corrected data.
     /// </summary>
-    const float LERP_TIME = 0.05f;
+    const float LERP_TIME = 0.025f;
 
     readonly Filter _filter;
 

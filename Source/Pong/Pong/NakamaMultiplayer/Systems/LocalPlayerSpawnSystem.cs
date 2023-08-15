@@ -18,7 +18,7 @@ public readonly record struct LocalPlayerSpawnMessage(
 );
 
 /// <summary>
-/// Responsible for spawning Player entities with the correct components.
+/// Responsible for spawning local player entities with the correct components.
 /// </summary>
 public class LocalPlayerSpawnSystem : MoonTools.ECS.System
 {

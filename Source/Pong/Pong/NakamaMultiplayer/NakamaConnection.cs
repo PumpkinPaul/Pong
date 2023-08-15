@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace Pong.NakamaMultiplayer;
 
+/// <summary>
+/// Facade into the Nakama system - responsible for connection and matchmaking.
+/// </summary>
 public class NakamaConnection
 {
     public string Scheme = "http";

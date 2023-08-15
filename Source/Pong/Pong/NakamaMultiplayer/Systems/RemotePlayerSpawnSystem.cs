@@ -15,7 +15,7 @@ public readonly record struct RemotePlayerSpawnMessage(
 );
 
 /// <summary>
-/// Responsible for spawning Player entities with the correct components.
+/// Spawns remote networked player entities with the correct components.
 /// </summary>
 public class RemotePlayerSpawnSystem : MoonTools.ECS.System
 {

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Pong.NakamaMultiplayer;
 
 /// <summary>
-/// Responsible for mapping local / network players to the entities in the ECS
+/// Maps local and network players to the entities in the ECS.
 /// </summary>
 public class PlayerEntityMapper
 {
