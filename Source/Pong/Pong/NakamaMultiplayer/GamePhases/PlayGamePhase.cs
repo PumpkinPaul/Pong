@@ -24,26 +24,10 @@ public class PlayGamePhase : GamePhase
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //Multiplayer
-    readonly NakamaConnection _nakamaConnection;
+    //Multiplayer networking
     readonly NetworkGameManager _networkGameManager;
 
-    readonly Queue<LocalPlayerSpawnMessage> _localPlayerSpawnMessages = new();
-    readonly Queue<RemotePlayerSpawnMessage> _remotePlayerSpawnMessages = new();
-    readonly Queue<MatchDataVelocityAndPositionMessage> _matchDataVelocityAndPositionMessage = new();
-    readonly Queue<DestroyEntityMessage> _destroyEntityMessage = new();
-
     MultiplayerGameState _gameState;
-
-    const int PLAYER_OFFSET_X = 32;
-    Vector2[] _playerSpawnPoints = new[] {
-        new Vector2(PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2),
-        new Vector2(PongGame.SCREEN_WIDTH - PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2)
-    };
-    int _playerSpawnPointsIdx = 0;
-    int _bounceDirection = -1;
-
-    readonly PlayerEntityMapper _playerEntityMapper = new();
 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
@@ -56,6 +40,33 @@ public class PlayGamePhase : GamePhase
 
     //Renderers
     SpriteRenderer _spriteRenderer;
+
+    readonly Queue<LocalPlayerSpawnMessage> _localPlayerSpawnMessages = new();
+    readonly Queue<RemotePlayerSpawnMessage> _remotePlayerSpawnMessages = new();
+    readonly Queue<MatchDataVelocityAndPositionMessage> _matchDataVelocityAndPositionMessage = new();
+    readonly Queue<DestroyEntityMessage> _destroyEntityMessage = new();
+
+    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    //Mapping between networking and ECS
+    readonly PlayerEntityMapper _playerEntityMapper = new();
+
+    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
+    //Gameplay
+    public event EventHandler ExitedMatch;
+
+    const int PLAYER_OFFSET_X = 32;
+    
+    Vector2[] _playerSpawnPoints = new[] {
+        new Vector2(PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2),
+        new Vector2(PongGame.SCREEN_WIDTH - PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2)
+    };
+    
+    int _playerSpawnPointsIdx = 0;
+    int _bounceDirection = -1;
 
     public PlayGamePhase(
         NetworkGameManager networkGameManager)
@@ -78,7 +89,8 @@ public class PlayGamePhase : GamePhase
             new BallSpawnSystem(_world),
             new ScoreSpawnSystem(_world),
 
-            new PlayerInputSystem(_world),
+            new PlayerInputSystem(_world),   //Get input from devices and turn into game actions...
+            new PlayerActionsSystem(_world), //...then process the actions (e.g. do a jump, fire a gun, etc)
 
             //Turn directions into velocity!
             new DirectionalSpeedSystem(_world),
@@ -188,8 +200,7 @@ public class PlayGamePhase : GamePhase
 
         await _networkGameManager.QuitMatch();
 
-        // Show the main menu, hide the in-game menu.
-        NakamaMultiplayerGame.Instance.GamePhaseManager.ChangePhase<MainMenuPhase>();
+        ExitedMatch?.Invoke(this, EventArgs.Empty);
     }
 
     void OnSpawnedLocalPlayer(object sender, EventArgs e)

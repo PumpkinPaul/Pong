@@ -3,7 +3,6 @@
 //Based on code from the FishGame Unity sample from Herioc Labs.
 //https://github.com/heroiclabs/fishgame-unity/blob/main/FishGame/Assets/Entities/Player/PlayerNetworkLocalSync.cs
 
-using Microsoft.Xna.Framework.Input;
 using MoonTools.ECS;
 using Pong.Gameplay.Components;
 using Pong.NakamaMultiplayer;
@@ -14,14 +13,15 @@ namespace Pong.Gameplay.Systems;
 
 /// <summary>
 /// Syncs the local player's state across the network by sending frequent network packets containing relevent 
-/// information such as velocity, position and inputs.
+/// information such as velocity, position and game actions (jump, shoot, crouch, etc).
 /// </summary>
 public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
 {
     readonly NetworkGameManager _gameManager;
 
     // How often to send the player's velocity and position across the network, in seconds.
-    readonly float StateFrequency = 1 / 20f; //20 updates per second
+    const int UPDATES_PER_SECOND = 20;
+    readonly float StateFrequency = 1.0f / UPDATES_PER_SECOND;
     float _stateSyncTimer;
 
     readonly Filter _filter;
@@ -36,14 +36,12 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
         _filter = FilterBuilder
             .Include<PositionComponent>()
             .Include<VelocityComponent>()
-            .Include<PlayerInputComponent>()
+            .Include<PlayerActionsComponent>()
             .Build();
     }
 
     public override void Update(TimeSpan delta)
     {
-        var keyBoardState = Keyboard.GetState();
-
         foreach (var entity in _filter.Entities)
         {
             ref readonly var position = ref Get<PositionComponent>(entity);
@@ -62,23 +60,16 @@ public sealed class PlayerNetworkLocalSyncSystem : MoonTools.ECS.System
 
             _stateSyncTimer -= (float)delta.TotalSeconds;
 
-            //TODO: add something exciting into the input - rockets? :-)
-            continue;
-
-            //TODO: Should use a GameInput wrapper here instead of PlayerInput directly
-            ref readonly var playerInput = ref Get<PlayerInputComponent>(entity);
+            ref readonly var playerActions = ref Get<PlayerActionsComponent>(entity);
 
             // If the players input hasn't changed, return early.
-            var moveUp = keyBoardState.IsKeyDown(playerInput.MoveUpKey);
-            var moveDown = keyBoardState.IsKeyDown(playerInput.MoveDownKey);
-
-            if (!moveUp && !moveDown)
+            if (!playerActions.MoveUp && !playerActions.MoveDown)
                 continue;
 
-            // Send network packet with the player's current input.
+            // Send network packet with the player's current actions.
             _gameManager.SendMatchState(
                 OpCodes.Input,
-                MatchDataJson.Input(moveUp, moveDown)
+                MatchDataJson.Input(playerActions.MoveUp, playerActions.MoveDown)
             );
         }
     }

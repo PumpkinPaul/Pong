@@ -48,6 +48,9 @@ public class NakamaMultiplayerGame : PongGame
         GamePhaseManager = new GamePhaseManager();
         GamePhaseManager.Add(new MainMenuPhase(_nakamaConnection));
         GamePhaseManager.Add(new PlayGamePhase(_networkGameManager));
+
+        // Show the main menu, hide the in-game menu when player quits the match
+        GamePhaseManager.Get<PlayGamePhase>().ExitedMatch += (sender, e) => GamePhaseManager.ChangePhase<MainMenuPhase>();
     }
 
     protected async override void Initialize()

@@ -1,6 +1,5 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MoonTools.ECS;
 using Pong.Gameplay.Components;
@@ -9,7 +8,7 @@ using System;
 namespace Pong.Gameplay.Systems;
 
 /// <summary>
-/// Responsible for checking imput devices, converting button presses into game actions.
+/// Responsible for checking input devices, converting button presses, etc into game actions.
 /// </summary>
 /// <example>
 /// Check the state of the 'Q' key and turn it into a 'move up' command if it is pressed.
@@ -33,16 +32,12 @@ public sealed class PlayerInputSystem : MoonTools.ECS.System
         {
             ref readonly var playerInput = ref Get<PlayerInputComponent>(entity);
 
-            const int PADDLE_SPEED = 5;
+            var moveUp = keyBoardState.IsKeyDown(playerInput.MoveUpKey);
+            var moveDown = keyBoardState.IsKeyDown(playerInput.MoveDownKey);
 
-            var moveUp = keyBoardState.IsKeyDown(playerInput.MoveUpKey)
-                ? PADDLE_SPEED : 0;
-
-            var moveDown = keyBoardState.IsKeyDown(playerInput.MoveDownKey)
-                ? -PADDLE_SPEED : 0;
-
-            Set(entity,
-                new VelocityComponent(new Vector2(0, moveUp + moveDown)));
+            Set(entity, new PlayerActionsComponent(
+                moveUp,
+                moveDown));            
         }
     }
 }
