@@ -9,18 +9,30 @@ using Pong.Engine;
 using Pong.NakamaMultiplayer.Players;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Pong.NakamaMultiplayer;
 
-public record class SpawnedRemotePlayerEventArgs(
+public record SpawnedRemotePlayerEventArgs(
     string SessionId
 );
 
 public record ReceivedRemotePlayerPositionEventArgs(
     Vector2 Position,
     string SessionId
+);
+
+public record ReceivedRemoteBallStateEventArgs(
+    float Direction,
+    Vector2 Position
+);
+
+public record ReceivedRemoteScoreEventArgs(
+    int Player1Score,
+    int Player2Score
 );
 
 public record RemovedPlayerEventArgs(
@@ -35,16 +47,21 @@ public class NetworkGameManager
     public event EventHandler SpawnedLocalPlayer;
     public event EventHandler<SpawnedRemotePlayerEventArgs> SpawnedRemotePlayer;
     public event EventHandler<ReceivedRemotePlayerPositionEventArgs> ReceivedRemotePlayerPosition;
+    public event EventHandler<ReceivedRemoteBallStateEventArgs> ReceivedRemoteBallState;
+    public event EventHandler<ReceivedRemoteScoreEventArgs> ReceivedRemoteScore;
     public event EventHandler<RemovedPlayerEventArgs> RemovedPlayer;
 
     //Multiplayer
     readonly NakamaConnection _nakamaConnection;
 
-    IUserPresence _localUser;
+    IUserPresence _hostPresence;
+    IUserPresence _localUserPresence;
     IMatch _currentMatch;
 
     readonly IDictionary<string, Player> _players;
     Player _localPlayer;
+
+    public bool IsHost => (_hostPresence?.SessionId ?? "host") == (_localUserPresence?.SessionId ?? "user");
 
     public NetworkGameManager(
         NakamaConnection nakamaConnection)
@@ -71,8 +88,11 @@ public class NetworkGameManager
     {
         Logger.WriteLine($"OnReceivedMatchmakerMatched");
 
+        //Set the host - hosts will be responsible for sending non-player data (e.g. like the ball's position)
+        _hostPresence = matched.Users.OrderByDescending(x => x.Presence.SessionId).First().Presence;
+
         // Cache a reference to the local user.
-        _localUser = matched.Self.Presence;
+        _localUserPresence = matched.Self.Presence;
 
         // Join the match.
         var match = await _nakamaConnection.Socket.JoinMatchAsync(matched);
@@ -92,6 +112,10 @@ public class NetworkGameManager
     public void OnReceivedMatchPresence(IMatchPresenceEvent matchPresenceEvent)
     {
         Logger.WriteLine($"OnReceivedMatchPresence");
+
+        //Set a new host if current host leaves
+        if (matchPresenceEvent.Leaves.Any(x => x.UserId == _hostPresence.UserId))
+            _hostPresence = _currentMatch.Presences.OrderBy(x => x.SessionId).First();
 
         // For each new user that joins, spawn a player for them.
         foreach (var user in matchPresenceEvent.Joins)
@@ -113,7 +137,7 @@ public class NetworkGameManager
         if (!_players.TryGetValue(matchState.UserPresence.SessionId, out var player))
             return;
 
-        // If the incoming data is not related to this remote player, ignore it and return early.
+        //a If the incoming data is not related to this remote player, ignore it and return early.
         var networkPlayer = player as NetworkPlayer;
         if (matchState.UserPresence.SessionId != networkPlayer?.NetworkData?.User?.SessionId)
             return;
@@ -125,9 +149,18 @@ public class NetworkGameManager
                 UpdateVelocityAndPositionFromState(matchState.State, networkPlayer);
                 break;
 
+            case OpCodes.DirectionAndPosition:
+                UpdateDirectionAndPositionFromState(matchState.State, networkPlayer);
+                break;
+
             //case OpCodes.Input:
             //    SetInputFromState(matchState.State);
             //    break;
+
+            case OpCodes.Scored:
+                UpdateScoreFromState(matchState.State);
+                break;
+
             default:
                 break;
         }
@@ -145,7 +178,7 @@ public class NetworkGameManager
 
         // Reset the currentMatch and localUser variables.
         _currentMatch = null;
-        _localUser = null;
+        _localUserPresence = null;
 
         // Destroy all existing player.
         foreach (var player in _players.Values)
@@ -166,7 +199,7 @@ public class NetworkGameManager
         }
 
         // Set a variable to check if the player is the local player or not based on session ID.
-        var isLocal = userPresence.SessionId == _localUser.SessionId;
+        var isLocal = userPresence.SessionId == _localUserPresence.SessionId;
 
         Player player;
 
@@ -222,6 +255,41 @@ public class NetworkGameManager
         ReceivedRemotePlayerPosition?.Invoke(
             this,
             new ReceivedRemotePlayerPositionEventArgs(position, networkPlayer.NetworkData.User.SessionId));
+    }
+
+    /// <summary>
+    /// Updates the ball's direction and position based on incoming state data.
+    /// </summary>
+    /// <param name="state">The incoming state byte array.</param>
+    private void UpdateDirectionAndPositionFromState(byte[] state, NetworkPlayer networkPlayer)
+    {
+        var stateDictionary = GetStateAsDictionary(state);
+
+        var direction = float.Parse(stateDictionary["direction"]);
+
+        var position = new Vector2(
+            float.Parse(stateDictionary["position.x"]),
+            float.Parse(stateDictionary["position.y"]));
+
+        ReceivedRemoteBallState?.Invoke(
+            this,
+            new ReceivedRemoteBallStateEventArgs(direction, position));
+    }
+
+    /// <summary>
+    /// Updates the score based on incoming state data.
+    /// </summary>
+    /// <param name="state">The incoming state byte array.</param>
+    private void UpdateScoreFromState(byte[] state)
+    {
+        var stateDictionary = GetStateAsDictionary(state);
+
+        var player1Score = int.Parse(stateDictionary["player1.score"]);
+        var player2Score = int.Parse(stateDictionary["player2.score"]);
+        
+        ReceivedRemoteScore?.Invoke(
+            this,
+            new ReceivedRemoteScoreEventArgs(player1Score, player2Score));
     }
 
     /// <summary>

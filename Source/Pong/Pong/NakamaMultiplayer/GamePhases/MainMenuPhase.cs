@@ -57,23 +57,24 @@ public class MainMenuPhase : GamePhase
     {
         base.OnDraw();
 
+        var spriteBatch = PongGame.Instance.SpriteBatch;
+
         //Draw the UI
-        PongGame.Instance.SpriteBatch.Begin();
-        //_scoreRenderer.Draw();
-        PongGame.Instance.SpriteBatch.DrawString(Resources.GameFont, "Pong", new Vector2(300, PongGame.SCREEN_HEIGHT * 0.25f), Color.Red);
+        spriteBatch.Begin();
+        spriteBatch.DrawString(Resources.GameFont, "Pong", new Vector2(300, PongGame.SCREEN_HEIGHT * 0.25f), Color.Red);
         
         switch(_phase)
         {
             case Phase.Ready:
-                PongGame.Instance.SpriteBatch.DrawString(Resources.SmallFont, "Press SPACE to play!", new Vector2(250, 220), Color.Red);
+                spriteBatch.DrawString(Resources.SmallFont, "Press SPACE to play!", new Vector2(250, 220), Color.Red);
                 break;
 
             case Phase.FindMatch:
-                PongGame.Instance.SpriteBatch.DrawString(Resources.SmallFont, "Searching for match...", new Vector2(250, 220), Color.Red);
-                PongGame.Instance.SpriteBatch.DrawString(Resources.SmallFont, "Press SPACE to cancel", new Vector2(240, 260), Color.Red);
+                spriteBatch.DrawString(Resources.SmallFont, "Searching for match...", new Vector2(250, 220), Color.Red);
+                spriteBatch.DrawString(Resources.SmallFont, "Press SPACE to cancel", new Vector2(240, 260), Color.Red);
                 break;
         }
 
-        PongGame.Instance.SpriteBatch.End();
+        spriteBatch.End();
     }
 }

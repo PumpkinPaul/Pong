@@ -7,6 +7,7 @@ using Pong.Engine.Extensions;
 using Pong.Gameplay;
 using Pong.Gameplay.Renderers;
 using Pong.Gameplay.Systems;
+using Pong.NakamaMultiplayer;
 using System;
 
 namespace Pong.SinglePlayer;
@@ -52,7 +53,8 @@ public class SinglePlayerGame : PongGame
             new BallSpawnSystem(_world),
             new ScoreSpawnSystem(_world),
 
-            new PlayerInputSystem(_world),
+            new PlayerInputSystem(_world),   //Get input from devices and turn into game actions...
+            new PlayerActionsSystem(_world), //...then process the actions (e.g. do a jump, fire a gun, etc)
 
             //Turn directions into velocity!
             new DirectionalSpeedSystem(_world),
@@ -65,6 +67,11 @@ public class SinglePlayerGame : PongGame
             new MovementSystem(_world),
             new BounceSystem(_world),
             new AngledBounceSystem(_world),
+
+            new GoalScoredSystem(_world, _gameState),
+
+            //Remove the dead entities
+            new DestroyEntitySystem(_world)
         };
 
         _spriteRenderer = new SpriteRenderer(_world, SpriteBatch);

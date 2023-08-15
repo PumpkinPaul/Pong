@@ -55,20 +55,26 @@ public sealed class WorldCollisionSystem : MoonTools.ECS.System
             var collisionEdge = CollisionEdge.None;
             var newVelocity = velocity.Value;
 
+            var player1ScoreIncrement = 0;
+            var player2ScoreIncrement = 0;
+
             if (velocity.Value.X < 0 && worldBounds.Left < 0)
             {
                 newVelocity.X -= worldBounds.Left;
                 collisionEdge |= CollisionEdge.Left;
 
-                _gameState.Player2Score++;
+                player2ScoreIncrement = 1;
             }
             else if (velocity.Value.X > 0 && worldBounds.Right > _worldSize.X)
             {
                 newVelocity.X -= worldBounds.Right - _worldSize.X;
                 collisionEdge |= CollisionEdge.Right;
 
-                _gameState.Player1Score++;
+                player1ScoreIncrement = 1;
             }
+
+            if (player1ScoreIncrement > 0 || player2ScoreIncrement > 0)
+                Send(new GoalScoredMessage(player1ScoreIncrement, player2ScoreIncrement));
 
             if (velocity.Value.Y < 0 && worldBounds.Bottom < 0)
             {
@@ -85,9 +91,7 @@ public sealed class WorldCollisionSystem : MoonTools.ECS.System
             Set(entity, new VelocityComponent(newVelocity));
 
             if (collisionEdge != CollisionEdge.None && Has<CanBounceComponent>(entity))
-            {
                 Set(entity, new BounceResponseComponent(collisionEdge));
-            }
         }
     }
 }

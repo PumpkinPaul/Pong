@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Input;
 using MoonTools.ECS;
 using Pong.Engine;
 using Pong.Engine.Extensions;
+using Pong.Gameplay;
 using Pong.Gameplay.Renderers;
 using Pong.Gameplay.Systems;
 using Pong.NakamaMultiplayer.Systems;
@@ -34,17 +35,19 @@ public class ECSManager
     readonly Queue<LocalPlayerSpawnMessage> _localPlayerSpawnMessages = new();
     readonly Queue<RemotePlayerSpawnMessage> _remotePlayerSpawnMessages = new();
     readonly Queue<MatchDataVelocityAndPositionMessage> _matchDataVelocityAndPositionMessage = new();
+    readonly Queue<MatchDataDirectionAndPositionMessage> _matchDataDirectionAndPositionMessage = new();
     readonly Queue<DestroyEntityMessage> _destroyEntityMessage = new();
 
     public ECSManager(
         NetworkGameManager networkGameManager,
-        PlayerEntityMapper playerEntityMapper)
+        PlayerEntityMapper playerEntityMapper,
+        MultiplayerGameState gameState)
     {
         _networkGameManager = networkGameManager;
         _playerEntityMapper = playerEntityMapper;
+        _gameState = gameState;
 
         _world = new World();
-        _gameState = new MultiplayerGameState();
 
         _systems = new MoonTools.ECS.System[]
         {
@@ -70,8 +73,13 @@ public class ECSManager
             new AngledBounceSystem(_world),
 
             //LateUpdate
+            //...handle sending data to remote clients
+            new GoalScoredLocalSyncSystem(_world, _networkGameManager, _gameState),
             new PlayerNetworkLocalSyncSystem(_world, _networkGameManager),
+            new BallNetworkLocalSyncSystem(_world, _networkGameManager),
+            //...handle receiving data from remote clients
             new PlayerNetworkRemoteSyncSystem(_world),
+            new BallNetworkRemoteSyncSystem(_world),
             new LerpPositionSystem(_world),
 
             //Remove the dead entities
@@ -136,6 +144,14 @@ public class ECSManager
         ));
     }
 
+    public void ReceivedMatchDataDirectionAndPosition(float direction, Vector2 position)
+    {
+        _matchDataDirectionAndPositionMessage.Enqueue(new MatchDataDirectionAndPositionMessage(
+            direction,
+            position
+        ));
+    }
+
     public void DestroyEntity(string sessionId)
     {
         var entity = _playerEntityMapper.GetEntityFromSessionId(sessionId);
@@ -153,7 +169,7 @@ public class ECSManager
 
     public void Update()
     {
-        SendMessages();
+        SendAllQueuedMessages();
 
         foreach (var system in _systems)
             system.Update(PongGame.Instance.TargetElapsedTime);
@@ -161,19 +177,19 @@ public class ECSManager
         _world.FinishUpdate();
     }
 
-    private void SendMessages()
+    private void SendAllQueuedMessages()
     {
-        while (_localPlayerSpawnMessages.Count > 0)
-            _world.Send(_localPlayerSpawnMessages.Dequeue());
+        SendMessages(_localPlayerSpawnMessages);
+        SendMessages(_remotePlayerSpawnMessages);
+        SendMessages(_matchDataVelocityAndPositionMessage);
+        SendMessages(_matchDataDirectionAndPositionMessage);
+        SendMessages(_destroyEntityMessage);
+    }
 
-        while (_remotePlayerSpawnMessages.Count > 0)
-            _world.Send(_remotePlayerSpawnMessages.Dequeue());
-
-        while (_matchDataVelocityAndPositionMessage.Count > 0)
-            _world.Send(_matchDataVelocityAndPositionMessage.Dequeue());
-
-        while (_destroyEntityMessage.Count > 0)
-            _world.Send(_destroyEntityMessage.Dequeue());
+    private void SendMessages<T>(Queue<T> messages) where T : unmanaged
+    {
+        while (messages.Count > 0)
+            _world.Send(messages.Dequeue());
     }
 
     public void Draw()

@@ -1,10 +1,9 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
-using Microsoft.Xna.Framework.Input;
 using Pong.Engine.Collections;
 using System;
 
-namespace Pong.NakamaMultiplayer;
+namespace Pong.NakamaMultiplayer.GamePhases;
 
 /// <summary>
 /// Manages the game's distinct phases - Splash, Intro, MainMenu, Play, etc.

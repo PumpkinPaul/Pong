@@ -19,14 +19,8 @@ namespace Pong.NakamaMultiplayer;
 /// </remarks>
 public class NakamaMultiplayerGame : PongGame
 {
-    public new static NakamaMultiplayerGame Instance => (NakamaMultiplayerGame)PongGame.Instance;
-
     public readonly GamePhaseManager GamePhaseManager;
 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------ 
-    //Player stuff
     PlayerProfile _playerProfile;
 
     //------------------------------------------------------------------------------------------------------------------------------------------------------ 
@@ -74,11 +68,6 @@ public class NakamaMultiplayerGame : PongGame
         Logger.WriteLine($"Changing game phase to begin a new play session");
 
         GamePhaseManager.ChangePhase<PlayGamePhase>();
-    }
-
-    protected override void BeginRun()
-    {
-        base.BeginRun();
     }
 
     protected override void OnUpdate(GameTime gameTime)

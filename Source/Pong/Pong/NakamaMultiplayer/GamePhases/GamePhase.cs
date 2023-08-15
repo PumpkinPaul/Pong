@@ -1,6 +1,6 @@
 // Copyright Pumpkin Games Ltd. All Rights Reserved.
 
-namespace Pong.NakamaMultiplayer;
+namespace Pong.NakamaMultiplayer.GamePhases;
 
 /// <summary>
 /// Base class for all the different game phases (e.g. main menu, playing the game, game over, etc).
@@ -29,9 +29,9 @@ public abstract class GamePhase
     }
 
     public void Draw() => OnDraw();
-    
+
     public void Destroy() => OnDestroy();
-    
+
     protected virtual void OnCreate() { }
     protected virtual void OnUpdate() { }
     protected virtual void OnDraw() { }

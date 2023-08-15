@@ -6,17 +6,24 @@ using Pong.Engine;
 using System;
 using System.Threading.Tasks;
 
-namespace Pong.NakamaMultiplayer;
+namespace Pong.NakamaMultiplayer.GamePhases;
 
 /// <summary>
 /// Playing the game phase
 /// </summary>
+/// <remarks>
+/// Player paddles are moving, ball is bouncing, all the bits that make up the gameplay part of the game.
+/// </remarks>
 public class PlayGamePhase : GamePhase
 {
+    MultiplayerGameState _gameState;
+
     //Multiplayer networking
     readonly NetworkGameManager _networkGameManager;
+
     //ECS
     ECSManager _ecsManager;
+
     //Mapping between networking and ECS
     readonly PlayerEntityMapper _playerEntityMapper = new();
 
@@ -32,7 +39,7 @@ public class PlayGamePhase : GamePhase
         new Vector2(PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2),
         new Vector2(PongGame.SCREEN_WIDTH - PLAYER_OFFSET_X, PongGame.SCREEN_HEIGHT / 2)
     };
-    
+
     int _playerSpawnPointsIdx = 0;
     int _bounceDirection = -1;
 
@@ -46,11 +53,15 @@ public class PlayGamePhase : GamePhase
     {
         base.Initialise();
 
-        _ecsManager = new ECSManager(_networkGameManager, _playerEntityMapper);
+        _gameState = new MultiplayerGameState();
+
+        _ecsManager = new ECSManager(_networkGameManager, _playerEntityMapper, _gameState);
 
         _networkGameManager.SpawnedLocalPlayer += OnSpawnedLocalPlayer;
         _networkGameManager.SpawnedRemotePlayer += OnSpawnedRemotePlayer;
         _networkGameManager.ReceivedRemotePlayerPosition += OnReceivedRemotePlayerPosition;
+        _networkGameManager.ReceivedRemoteBallState += OnReceivedRemoteBallState;
+        _networkGameManager.ReceivedRemoteScore += OnReceivedRemoteScore;
         _networkGameManager.RemovedPlayer += OnRemovedPlayer;
     }
 
@@ -113,6 +124,17 @@ public class PlayGamePhase : GamePhase
     void OnReceivedRemotePlayerPosition(object sender, ReceivedRemotePlayerPositionEventArgs e)
     {
         _ecsManager.ReceivedMatchDataVelocityAndPosition(e.Position, e.SessionId);
+    }
+
+    void OnReceivedRemoteBallState(object sender, ReceivedRemoteBallStateEventArgs e)
+    {
+        _ecsManager.ReceivedMatchDataDirectionAndPosition(e.Direction, e.Position);
+    }
+
+    void OnReceivedRemoteScore(object sender, ReceivedRemoteScoreEventArgs e)
+    {
+        _gameState.Player1Score = e.Player1Score;
+        _gameState.Player2Score = e.Player2Score;
     }
 
     void OnRemovedPlayer(object sender, RemovedPlayerEventArgs e)
