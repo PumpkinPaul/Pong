@@ -124,7 +124,7 @@ public sealed class EntityCollisionSystem : MoonTools.ECS.System
             ? CollisionEdge.Right : CollisionEdge.Left;
 
         Set(entity1, new VelocityComponent(newVelocity));
-        //Set(entity1, new BounceResponseComponent(collisionEdge));
-        Set(entity1, new AngledBounceResponseComponent(entity2));
+        Set(entity1, new BounceResponseComponent(collisionEdge));
+        //Set(entity1, new AngledBounceResponseComponent(entity2));
     }
 }

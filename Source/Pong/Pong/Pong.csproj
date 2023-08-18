@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>disable</Nullable>
-    <Description>Learning</Description>
+    <Description>Pong</Description>
     <Copyright>Copyright © 2023</Copyright>
     <Authors>Pumpkin Games</Authors>
     <PlatformTarget>x64</PlatformTarget>

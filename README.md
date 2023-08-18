@@ -28,6 +28,15 @@ Implemented using a Client Relayed Multiplayer approach using [Nakama](https://h
 
 > Nakama is the leading open source game server framework for building online multiplayer games in Godot, Unity, Unreal Engine, MonoGame, LibGDX, Defold, Cocos2d, Phaser, Macroquad and more
 
+## Getting Started
+
+Install Nakama - 
+The easiest way to do this is to follow the [Install](https://heroiclabs.com/docs/nakama/getting-started/install/) documentation on the Nakama webite.
+
+Clone the source code and build the app - all dependencies should be included in the project.
+
+You should then be able to launch two instances of the game to test locally.
+
 ## Credits
 
 Inspired by:
