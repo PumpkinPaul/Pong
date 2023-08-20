@@ -196,8 +196,9 @@ public class ECSManager
     {
         var spriteBatch = PongGame.Instance.SpriteBatch;
 
+        spriteBatch.BeginTextRendering();
+
         //Draw the world
-        spriteBatch.Begin(0, BlendState.AlphaBlend, null, null, RasterizerState.CullClockwise, PongGame.Instance.BasicEffect);
 
         //...all the entities
         _spriteRenderer.Draw();
@@ -206,8 +207,8 @@ public class ECSManager
         spriteBatch.DrawLine(new Vector2(PongGame.SCREEN_WIDTH / 2, 0), new Vector2(PongGame.SCREEN_WIDTH / 2, PongGame.SCREEN_HEIGHT), Color.Red);
 
         //..."HUD"
-        spriteBatch.DrawString(Resources.GameFont, _gameState.Player1Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.25f, 21), Color.Red);
-        spriteBatch.DrawString(Resources.GameFont, _gameState.Player2Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.75f, 21), Color.Red);
+        spriteBatch.DrawText(Resources.GameFont, _gameState.Player1Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.25f, PongGame.SCREEN_HEIGHT - 48), Color.Red, Alignment.Centre);
+        spriteBatch.DrawText(Resources.GameFont, _gameState.Player2Score.ToString(), new Vector2(PongGame.SCREEN_WIDTH * 0.75f, PongGame.SCREEN_HEIGHT - 48), Color.Red, Alignment.Centre);
 
         spriteBatch.End();
     }
